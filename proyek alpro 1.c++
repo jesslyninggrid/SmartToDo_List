@@ -13,7 +13,7 @@ struct Catatan {
     int id;             // ID catatan
     string teks;        // Isi catatan
     string prioritas;   // Prioritas
-    bool selesai;       // selesai atau belom
+    bool selesai;       // selesai atau belum
 };
 
 // Membersihkan layar
