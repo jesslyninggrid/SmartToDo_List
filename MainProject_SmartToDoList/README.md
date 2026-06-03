@@ -1,9 +1,11 @@
 # TodoList Qt — Cara Build & Jalankan
 
 ## Persyaratan
+Sebelum menjalankan aplikasi, pastikan beberapa software berikut sudah terpasang:
 - **Qt 5.15** atau **Qt 6.x** (download: https://www.qt.io/download-qt-installer)
+- Qt Creator 
 - Kompiler: MinGW (Windows) atau GCC/Clang (Linux/Mac)
-
+[Qt dapat diunduh melalui situs resmi Qt.]
 ---
 
 ## Cara Build (Qt Creator — PALING MUDAH)
@@ -11,7 +13,7 @@
 1. Buka **Qt Creator**
 2. File → Open File or Project → pilih `TodoList.pro`
 3. Pilih kit (Desktop Qt 5.15 / Qt 6)
-4. Klik tombol ▶ **Run** (Ctrl+R)
+4. Klik tombol ▶ **Run** atau tekan tombol (Ctrl+R)
 
 Hasil `.exe` ada di folder `build-TodoList-Desktop-Release/`
 
@@ -43,7 +45,8 @@ make -j4
 
 ---
 
-## Deploy ke PC lain (Windows)
+## Menjalankan Aplikasi di Komputer Lain (Windows)
+Apabila aplikasi ingin dipindahkan ke komputer lain, seluruh library Qt yang dibutuhkan harus disertakan.
 
 Setelah build, jalankan di folder hasil build:
 ```bash
