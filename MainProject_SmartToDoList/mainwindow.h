@@ -13,6 +13,7 @@
 #include <QScrollArea>
 #include <QFrame>
 #include <QVector>
+#include <QDateTimeEdit>
 #include "task.h"
 
 class MainWindow : public QMainWindow {
@@ -53,7 +54,7 @@ private:
     // Catat page widgets
     QWidget        *buildPageCatat();
     class QLineEdit  *inputCatatan;
-    class QLineEdit  *inputWaktu;
+    QDateTimeEdit    *inputWaktu;
     class QComboBox  *inputPriority;
 
     // Lihat page

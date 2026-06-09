@@ -3,6 +3,7 @@
 
 #include <QApplication>
 #include <QLineEdit>
+#include <QDateTimeEdit>
 #include <QComboBox>
 #include <QTextEdit>
 #include <QScrollArea>
@@ -172,7 +173,7 @@ QString MainWindow::appStyleSheet() {
     #pageSub   { font-size: 12px; color: #44445A; }
 
     /* Form */
-    QLineEdit, QComboBox, QTextEdit {
+    QLineEdit, QComboBox, QTextEdit, QDateTimeEdit {
         background: #16161D;
         border: 1px solid #2A2A35;
         border-radius: 8px;
@@ -181,11 +182,29 @@ QString MainWindow::appStyleSheet() {
         font-size: 13px;
         selection-background-color: #3A3A6A;
     }
-    QLineEdit:focus, QComboBox:focus, QTextEdit:focus {
+    QLineEdit:focus, QComboBox:focus, QTextEdit:focus, QDateTimeEdit:focus {
         border: 1px solid #5555CC;
         background: #18181F;
     }
     QLineEdit::placeholder { color: #40404A; }
+
+    QDateTimeEdit::up-button, QDateTimeEdit::down-button {
+        background: #1E1E28;
+        border: none;
+        width: 20px;
+        border-radius: 4px;
+    }
+    QDateTimeEdit::up-button:hover, QDateTimeEdit::down-button:hover { background: #2A2A3A; }
+    QDateTimeEdit::up-arrow   { border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 5px solid #7C7CFF; margin: 2px; }
+    QDateTimeEdit::down-arrow { border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid #7C7CFF; margin: 2px; }
+
+    /* Calendar popup */
+    QCalendarWidget { background: #16161D; color: #D8D8EC; border: 1px solid #2A2A35; border-radius: 8px; }
+    QCalendarWidget QAbstractItemView { background: #16161D; color: #D8D8EC; selection-background-color: #4444CC; selection-color: #FFFFFF; }
+    QCalendarWidget QWidget#qt_calendar_navigationbar { background: #1E1E28; border-radius: 6px; }
+    QCalendarWidget QToolButton { color: #D8D8EC; background: transparent; font-size: 13px; }
+    QCalendarWidget QToolButton:hover { background: #2A2A3A; border-radius: 4px; }
+    QCalendarWidget QSpinBox { background: #1E1E28; color: #D8D8EC; border: 1px solid #2A2A35; border-radius: 4px; }
 
     QComboBox::drop-down { border: none; width: 28px; }
     QComboBox::down-arrow { image: none; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid #666680; margin-right: 10px; }
@@ -304,9 +323,13 @@ QWidget *MainWindow::buildPageCatat() {
     inputCatatan->setFixedHeight(44);
     addField("Catatan", inputCatatan);
 
-    inputWaktu = new QLineEdit;
-    inputWaktu->setPlaceholderText("DD/MM/YYYY HH:MM   contoh: 25/05/2025 09:30");
+    inputWaktu = new QDateTimeEdit;
+    inputWaktu->setDisplayFormat("dd/MM/yyyy HH:mm");
+    inputWaktu->setCalendarPopup(true);           // klik ikon kalender → calendar picker muncul
+    inputWaktu->setDateTime(QDateTime::currentDateTime().addSecs(3600)); // default: 1 jam dari sekarang
+    inputWaktu->setMinimumDateTime(QDateTime::currentDateTime());
     inputWaktu->setFixedHeight(44);
+    inputWaktu->setButtonSymbols(QAbstractSpinBox::UpDownArrows);
     addField("Waktu Deadline", inputWaktu);
 
     inputPriority = new QComboBox;
@@ -416,16 +439,13 @@ void MainWindow::showPageHistory() {
 // ─── Tambah task ────────────────────────────────────────────
 void MainWindow::onTambahTask() {
     QString cat = inputCatatan->text().trimmed();
-    QString wkt = inputWaktu->text().trimmed();
+    QString wkt = inputWaktu->dateTime().toString("dd/MM/yyyy HH:mm");
 
     if (cat.isEmpty()) {
         QMessageBox::warning(this, "Perhatian", "Catatan tidak boleh kosong.");
         return;
     }
-    if (wkt.size() != 16 || !parseWaktu(wkt).isValid()) {
-        QMessageBox::warning(this, "Format Salah", "Gunakan format: DD/MM/YYYY HH:MM\nContoh: 25/05/2025 09:30");
-        return;
-    }
+    // QDateTimeEdit selalu valid — tidak perlu validasi manual format
 
     Task t;
     t.id       = tasks.isEmpty() ? 1 : tasks.last().id + 1;
@@ -438,7 +458,7 @@ void MainWindow::onTambahTask() {
     updateStats();
 
     inputCatatan->clear();
-    inputWaktu->clear();
+    inputWaktu->setDateTime(QDateTime::currentDateTime().addSecs(3600)); // reset ke default
     inputPriority->setCurrentIndex(2);
 
     trayIcon->showMessage("TodoList", "✓ Tugas \"" + cat + "\" berhasil dicatat.",
