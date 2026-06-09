@@ -14,7 +14,6 @@
 #include <QDataStream>
 #include <QSettings>
 #include <QPropertyAnimation>
-#include <QGraphicsDropShadowEffect>
 #include <QPainter>
 #include <QScreen>
 #include <QGuiApplication>
@@ -35,15 +34,6 @@ static long selisihMenit(const QString &waktu) {
     QDateTime dl = parseWaktu(waktu);
     if (!dl.isValid()) return 999;
     return QDateTime::currentDateTime().secsTo(dl) / 60;
-}
-
-// ─── shadow helper ─────────────────────────────────────────
-static void addShadow(QWidget *w, int blur = 18, QColor color = QColor(0,0,0,80)) {
-    auto *eff = new QGraphicsDropShadowEffect(w);
-    eff->setBlurRadius(blur);
-    eff->setColor(color);
-    eff->setOffset(0, 4);
-    w->setGraphicsEffect(eff);
 }
 
 // ═══════════════════════════════════════════════════════════
