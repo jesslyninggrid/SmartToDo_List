@@ -393,7 +393,28 @@ QWidget *MainWindow::buildPageHistory() {
     auto *sub = new QLabel("Tugas yang ditandai selesai setelah deadline");
     sub->setObjectName("pageSub");
     vl->addWidget(sub);
-    vl->addSpacing(20);
+    vl->addSpacing(12);
+
+    // ── Tombol Hapus Semua Log ───────────────────────────
+    QPushButton *btnHapusLog = new QPushButton("🗑  Hapus Semua Log");
+    btnHapusLog->setObjectName("btnDanger");
+    btnHapusLog->setFixedWidth(170);
+    btnHapusLog->setCursor(Qt::PointingHandCursor);
+    connect(btnHapusLog, &QPushButton::clicked, this, [this]{
+        auto reply = QMessageBox::question(this, "Hapus Log",
+            "Yakin ingin menghapus semua log history telat?\nTindakan ini tidak bisa dibatalkan.",
+            QMessageBox::Yes | QMessageBox::No);
+        if (reply == QMessageBox::Yes) {
+            QFile::remove("history_telat.txt");
+            refreshHistory();
+        }
+    });
+    QHBoxLayout *barHapus = new QHBoxLayout;
+    barHapus->addStretch();
+    barHapus->addWidget(btnHapusLog);
+    vl->addLayout(barHapus);
+    vl->addSpacing(12);
+    // ─────────────────────────────────────────────────────
 
     QScrollArea *scroll = new QScrollArea;
     scroll->setWidgetResizable(true);
