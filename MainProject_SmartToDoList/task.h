@@ -6,32 +6,28 @@
 enum class Priority { URGENT = 1, IMPORTANT = 2, STANDARD = 3 };
 
 struct Task {
-    int      id       = 0;
+    int      id           = 0;
     QString  catatan;
-    QString  waktu;           // DD/MM/YYYY HH:MM
-    Priority priority = Priority::STANDARD;
-    bool     selesai  = false;
-    bool     telat    = false;
+    QString  waktu;          // "dd/MM/yyyy HH:mm"
+    Priority priority     = Priority::STANDARD;
+
+    bool     selesai      = false;
+    bool     telat        = false;
     QString  waktuSelesai;
 
-    bool     notif15  = false;
-    bool     notif5   = false;
-    bool     notif0   = false;
-    bool     notifLate = false;
+    // notif flags — sekali tembak, kecuali notifLate yg realtime
+    bool     notif15      = false;   // sudah kirim notif 15 menit sebelum
+    bool     notif5       = false;   // sudah kirim notif 5 menit sebelum
+    bool     notif1       = false;   // sudah kirim notif 1 menit sebelum
+    bool     notif0       = false;   // sudah kirim notif tepat deadline
+    bool     notifLate    = false;   // sudah kirim notif pertama kali telat
+    // notifLate TIDAK dipakai sebagai one-shot lagi — lihat logika baru
 
     QString priorityLabel() const {
         switch (priority) {
             case Priority::URGENT:    return "URGENT";
             case Priority::IMPORTANT: return "IMPORTANT";
             default:                  return "STANDARD";
-        }
-    }
-
-    QString priorityColor() const {
-        switch (priority) {
-            case Priority::URGENT:    return "#FF4C4C";
-            case Priority::IMPORTANT: return "#FFB830";
-            default:                  return "#4CC9F0";
         }
     }
 };
