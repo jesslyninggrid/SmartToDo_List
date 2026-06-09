@@ -134,7 +134,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
     notifTimer = new QTimer(this);
     connect(notifTimer, &QTimer::timeout, this, &MainWindow::onNotifTick);
-    notifTimer->start(30000);
+    notifTimer->start(10000); // tick tiap 10 detik — cukup halus untuk notif 1 menit
 
     // ── Load data ────────────────────────────────────────
     loadData();
@@ -632,37 +632,86 @@ void MainWindow::refreshHistory() {
 }
 
 // ─── Notifikasi timer ───────────────────────────────────────
+// Logika:
+//   notif15, notif5, notif1, notif0 → one-shot (cukup sekali)
+//   notif telat                     → REALTIME: muncul tiap ~5 menit selama belum selesai
 void MainWindow::onNotifTick() {
     bool changed = false;
+    QDateTime now = QDateTime::currentDateTime();
+
     for (auto &t : tasks) {
         if (t.selesai) continue;
-        long sisa = selisihMenit(t.waktu);
 
-        if (!t.notif15 && sisa <= 15 && sisa > 5) {
+        // selisih dalam DETIK agar presisi (untuk notif 1 menit)
+        QDateTime dl = parseWaktu(t.waktu);
+        if (!dl.isValid()) continue;
+        qint64 sisaDetik = now.secsTo(dl);       // positif = belum lewat
+        qint64 sisaMenit = sisaDetik / 60;
+
+        // ── 15 menit sebelum (one-shot) ─────────────────────
+        if (!t.notif15 && sisaMenit <= 15 && sisaMenit > 5) {
             t.notif15 = true; changed = true;
             trayIcon->showMessage("⚡ 15 Menit Lagi!",
-                "\"" + t.catatan + "\" deadline " + t.waktu,
-                QSystemTrayIcon::Warning, 5000);
+                "\"" + t.catatan + "\"\nDeadline: " + t.waktu,
+                QSystemTrayIcon::Warning, 6000);
         }
-        if (!t.notif5 && sisa <= 5 && sisa > 0) {
+
+        // ── 5 menit sebelum (one-shot) ───────────────────────
+        if (!t.notif5 && sisaMenit <= 5 && sisaMenit > 1) {
             t.notif5 = true; changed = true;
             trayIcon->showMessage("⚠ 5 Menit Lagi!",
-                "\"" + t.catatan + "\" segera deadline!",
-                QSystemTrayIcon::Critical, 5000);
+                "\"" + t.catatan + "\"\nSegera selesaikan!",
+                QSystemTrayIcon::Critical, 6000);
         }
-        if (!t.notif0 && sisa <= 0 && sisa > -2) {
+
+        // ── 1 menit sebelum (one-shot) ───────────────────────
+        if (!t.notif1 && sisaDetik <= 60 && sisaDetik > 0) {
+            t.notif1 = true; changed = true;
+            trayIcon->showMessage("🚨 1 Menit Lagi!",
+                "\"" + t.catatan + "\"\nHampir deadline!",
+                QSystemTrayIcon::Critical, 7000);
+        }
+
+        // ── Tepat deadline (one-shot) ────────────────────────
+        if (!t.notif0 && sisaDetik <= 0 && sisaDetik > -60) {
             t.notif0 = true; changed = true;
-            trayIcon->showMessage("🔔 DEADLINE SEKARANG",
-                "\"" + t.catatan + "\" sudah waktunya!",
-                QSystemTrayIcon::Critical, 6000);
+            trayIcon->showMessage("🔔 DEADLINE SEKARANG!",
+                "\"" + t.catatan + "\"\nWaktunya sudah habis!",
+                QSystemTrayIcon::Critical, 8000);
         }
-        if (!t.notifLate && sisa < -1) {
-            t.notifLate = true; changed = true;
-            trayIcon->showMessage("⛔ TUGAS TELAT",
-                "\"" + t.catatan + "\" belum selesai dan sudah lewat deadline!",
-                QSystemTrayIcon::Critical, 6000);
+
+        // ── TELAT — REALTIME, muncul tiap 5 menit ───────────
+        // Gunakan lastLateNotif: waktu terakhir kirim notif telat
+        // Kita simpan di notifLate sebagai flag "sudah pernah lewat"
+        // dan pakai lateNotifTime (detik epoch mod interval) untuk
+        // throttle — cukup cek apakah sudah >5 menit sejak terakhir
+        if (sisaDetik < 0) {  // sudah lewat deadline dan belum selesai
+            qint64 mTelat = (-sisaDetik) / 60;  // sudah berapa menit telat
+            // Kirim notif: pertama kali, lalu tiap 5 menit berikutnya
+            // Kita pakai notifLate sebagai "sudah kirim notif ke-N"
+            // Simpan counter di field notifLate (bool→gunakan logika modulo waktu)
+            // Cukup: kirim jika (mTelat % 5 == 0) atau (mTelat == 1) —
+            // tapi karena timer 10 detik, pakai detik agar tidak double-fire:
+            // kirim hanya jika detik telat berada di window 0–10 setelah kelipatan 5 menit
+            qint64 sTelat = -sisaDetik;
+            bool windowFire = (sTelat % 300) < 11;  // 300 detik = 5 menit, window 10 detik
+            bool firstFire  = !t.notifLate && sTelat >= 0;
+
+            if (firstFire || windowFire) {
+                if (firstFire) t.notifLate = true;
+                changed = true;
+                QString pesanTelat;
+                if (mTelat < 1)
+                    pesanTelat = "\"" + t.catatan + "\"\nBaru saja melewati deadline!";
+                else
+                    pesanTelat = "\"" + t.catatan + "\"\nSudah telat " + QString::number(mTelat) + " menit!";
+                trayIcon->showMessage("⛔ TUGAS TELAT!",
+                    pesanTelat,
+                    QSystemTrayIcon::Critical, 8000);
+            }
         }
     }
+
     if (changed) {
         saveData();
         if (pages->currentWidget() == pageLihat) refreshLihat();
@@ -690,7 +739,7 @@ void MainWindow::saveData() {
         ds << t.id << t.catatan << t.waktu
            << static_cast<int>(t.priority)
            << t.selesai << t.telat << t.waktuSelesai
-           << t.notif15 << t.notif5 << t.notif0 << t.notifLate;
+           << t.notif15 << t.notif5 << t.notif1 << t.notif0 << t.notifLate;
     }
 }
 
@@ -702,9 +751,14 @@ void MainWindow::loadData() {
     for (int i = 0; i < n; i++) {
         Task t;
         int pri;
+        // Baca field wajib
         ds >> t.id >> t.catatan >> t.waktu >> pri
            >> t.selesai >> t.telat >> t.waktuSelesai
-           >> t.notif15 >> t.notif5 >> t.notif0 >> t.notifLate;
+           >> t.notif15 >> t.notif5;
+        // notif1 adalah field baru — jika file lama (stream habis), default false
+        if (!ds.atEnd()) ds >> t.notif1;
+        if (!ds.atEnd()) ds >> t.notif0;
+        if (!ds.atEnd()) ds >> t.notifLate;
         t.priority = static_cast<Priority>(pri);
         tasks.append(t);
     }
