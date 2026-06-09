@@ -9,11 +9,13 @@ TEMPLATE = app
 
 SOURCES += \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    datetimepicker.cpp
 
 HEADERS += \
     mainwindow.h \
-    task.h
+    task.h \
+    datetimepicker.h
 
 # Suppress deprecation warnings
 DEFINES += QT_DEPRECATED_WARNINGS
