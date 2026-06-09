@@ -13,7 +13,7 @@
 #include <QScrollArea>
 #include <QFrame>
 #include <QVector>
-#include <QDateTimeEdit>
+#include "datetimepicker.h"
 #include "task.h"
 
 class MainWindow : public QMainWindow {
@@ -52,9 +52,9 @@ private:
     QWidget        *pageHistory;
 
     // Catat page widgets
-    QWidget        *buildPageCatat();
+    QWidget          *buildPageCatat();
     class QLineEdit  *inputCatatan;
-    QDateTimeEdit    *inputWaktu;
+    DateTimePicker   *inputWaktu;       // ← custom picker
     class QComboBox  *inputPriority;
 
     // Lihat page
